@@ -1,10 +1,18 @@
 import requests
 import random
 import os
+import sqlite3
 from bs4 import BeautifulSoup
 
+conn = sqlite3.connect('zno_quests/answers.sqlite')
 
-def download_test(test_id=random.randint(1, 300)):
+# Создать таблицу с ответами если её не существует
+c = conn.cursor()
+c.execute(
+    "CREATE TABLE IF NOT EXISTS answers (test_id INTEGER, question_id INTEGER, answer_1 TEXT, answer_2 TEXT, answer_3 TEXT, answer_4 TEXT);")
+
+
+def download_test(cursor, test_id=random.randint(1, 300)):
     r = requests.post("https://zno.osvita.ua/users/znotest/highload/",
                       data={
                           'znotest': test_id,
@@ -72,9 +80,14 @@ def download_test(test_id=random.randint(1, 300)):
         # print(answer_text)
         print(answers_list)
 
+        # Save to DB
+        cursor.execute("INSERT into answers VALUES (?, ?, ?, ?, ?, ?)",
+                       [test_id, question_id] + [str(answers_list[x]) if len(answers_list) > x else None for x in range(4)])
         with open('zno_quests/%d/%d.html' % (test_id, question_id), 'w') as f:
             f.write(str(question_html))
 
 
 if __name__ == "__main__":
-    download_test()
+    c = conn.cursor()
+    download_test(c)
+    conn.commit()
