@@ -53,7 +53,7 @@ def download_test(cursor, test_id=random.randint(1, 300)):
         question_text = elem.find(class_='q-txt')
         # question_img_src = question_text.find("img")["src"]
         question_html = ''.join([str(x) for x in question_text.contents])
-
+        # question_html = ''.join([str(x) for x in question_text.contents])
         if "width" in question_html:
             question_html = re.sub(' (height|width)="(\w+)"', '', question_html)
         question_answers = elem.find(class_="quest col")
@@ -65,7 +65,7 @@ def download_test(cursor, test_id=random.randint(1, 300)):
         answer_text = elem.find_all(class_='q-info')
         answers_table = elem.find("table", class_='q-answer')
         another_answers_table_list = elem.find_all("table", class_='answer')
-        another_answers_table = None if len(another_answers_table_list) < 2 else another_answers_table_list[1]
+        another_answers_table = " " if len(another_answers_table_list) < 2 else another_answers_table_list[1]
         if answers_table is not None:
             answers_type = 1
 
@@ -81,13 +81,14 @@ def download_test(cursor, test_id=random.randint(1, 300)):
 
             if len(table_rows_without_heading) != len(answers_list):
                 raise RuntimeError("Сломалось из-за того, что на одной строке появилось больше одного ответа")
-        elif another_answers_table is not None:
+        elif another_answers_table != " ":
             for row in another_answers_table.find_all("td"):
                 bold_text = row.find('b')
                 if bold_text is None:
                     continue
 
                 answers_list.append(str(bold_text.text))
+
         elif len(answer_text) >= 2 and answer_text[1].find('b') is not None:
             answers_list.append(answer_text[1].find('b').text)
 
@@ -101,6 +102,8 @@ def download_test(cursor, test_id=random.randint(1, 300)):
                        [test_id, question_id] + [str(answers_list[x]) if len(answers_list) > x else None for x in
                                                  range(4)])
         with open('zno_quests/%d/%d.html' % (test_id, question_id), 'w') as f:
+            if "None" in question_html:
+                question_html = re.sub('None', '', question_html)
             f.write(str(question_html))
 
 
